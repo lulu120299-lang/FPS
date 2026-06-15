@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>FPS Manager</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3a4a4a">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root{
+    --ink:#2b3535;
+    --slate:#3a4a4a;
+    --slate-light:#5a6e6e;
+    --sage:#8aa399;
+    --sage-pale:#e7eee9;
+    --paper:#f6f5f1;
+    --paper-card:#ffffff;
+    --corail:#e0654a;
+    --corail-soft:#f7ddd5;
+    --line:#dcdfd9;
+    --radius:14px;
+    --shadow:0 1px 2px rgba(43,53,53,.06), 0 4px 16px rgba(43,53,53,.06);
+    --font-display:'Fjalla One','Arial Narrow',sans-serif;
+    --font-body:-apple-system,'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono','SF Mono',monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  header{
+    position:sticky; top:0; z-index:10;
+    background:var(--slate);
+    color:#fff;
+    padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .brand{
+    font-family:var(--font-display);
+    font-size:22px;
+    letter-spacing:.5px;
+    text-transform:uppercase;
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--corail);}
+  .btn-new{
+    background:var(--corail);
+    color:#fff;
+    border:none;
+    border-radius:10px;
+    padding:9px 16px;
+    font-size:14px;
+    font-weight:600;
+    font-family:var(--font-body);
+    display:flex; align-items:center; gap:6px;
+    cursor:pointer;
+  }
+  .btn-new:active{transform:scale(.97);}
+
+  main{padding:16px;max-width:780px;margin:0 auto;}
+
+  .filters{
+    display:flex; gap:8px; overflow-x:auto; padding:4px 0 14px;
+    -ms-overflow-style:none; scrollbar-width:none;
+  }
+  .filters::-webkit-scrollbar{display:none;}
+  .chip{
+    flex:none;
+    font-family:var(--font-mono);
+    font-size:12px; letter-spacing:.04em;
+    padding:7px 13px;
+    border-radius:999px;
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    color:var(--slate-light);
+    cursor:pointer;
+    text-transform:uppercase;
+  }
+  .chip.active{
+    background:var(--slate);
+    border-color:var(--slate);
+    color:#fff;
+  }
+
+  .empty{
+    text-align:center;
+    padding:60px 20px;
+    color:var(--slate-light);
+  }
+  .empty .sym{
+    font-family:var(--font-display);
+    font-size:56px;
+    color:var(--sage);
+    margin-bottom:8px;
+    line-height:1;
+  }
+  .empty h2{
+    font-family:var(--font-display);
+    text-transform:uppercase;
+    letter-spacing:.06em;
+    font-size:18px;
+    color:var(--ink);
+    margin:0 0 6px;
+  }
+  .empty p{margin:0;font-size:14px;line-height:1.5;}
+
+  .fps-list{display:flex;flex-direction:column;gap:10px;}
+  .fps-card{
+    background:var(--paper-card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:14px 16px;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    cursor:pointer;
+    border:1px solid transparent;
+    transition:border-color .15s;
+  }
+  .fps-card:active{border-color:var(--sage);}
+  .fps-tag{
+    flex:none;
+    width:46px;height:46px;
+    border-radius:11px;
+    background:var(--sage-pale);
+    color:var(--slate);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display);
+    font-size:17px;
+    text-transform:uppercase;
+  }
+  .fps-info{flex:1; min-width:0;}
+  .fps-title{
+    font-weight:600;
+    font-size:15px;
+    margin:0 0 3px;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .fps-meta{
+    display:flex; gap:10px; flex-wrap:wrap;
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--slate-light);
+    letter-spacing:.03em;
+  }
+  .fps-meta span::before{content:'·'; margin-right:6px; color:var(--line);}
+  .fps-meta span:first-child::before{content:none;margin:0;}
+  .fps-arrow{flex:none;color:var(--line);font-size:20px;}
+
+  .levels-preview{
+    display:flex; gap:3px; flex:none;
+  }
+  .lvl-dot{
+    width:8px;height:8px;border-radius:50%;
+  }
+
+  .fab-hint{
+    position:fixed; bottom:20px; right:20px;
+    font-family:var(--font-mono); font-size:11px;
+    color:var(--slate-light);
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-radius:999px;
+    padding:6px 12px;
+    box-shadow:var(--shadow);
+    display:none;
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .fps-card{transition:transform .15s, border-color .15s;}
+    .fps-card:active{transform:scale(.99);}
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="dot"></span>FPS Manager</div>
+  <button class="btn-new" onclick="location.href='editeur.html'">+ Nouvelle FPS</button>
+</header>
+
+<main>
+  <div class="filters" id="filters">
+    <div class="chip active" data-filter="all">Toutes</div>
+    <div class="chip" data-filter="cap">CAP</div>
+    <div class="chip" data-filter="bacpro">Bac Pro</div>
+    <div class="chip" data-filter="seconde">Seconde</div>
+    <div class="chip" data-filter="archive">Archivées</div>
+  </div>
+
+  <div id="content">
+    <div class="empty">
+      <div class="sym">FPS</div>
+      <h2>Aucune fiche pour l'instant</h2>
+      <p>Crée ta première FPS : modalités, niveaux de compétence,<br>schémas et PDF associés.</p>
+    </div>
+  </div>
+</main>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
