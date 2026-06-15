@@ -1,0 +1,488 @@
+// ---- Éditeur FPS par blocs ----
+
+const params = new URLSearchParams(location.search);
+let fpsId = params.get('id');
+let blocks = [];   // liste des blocs de contenu
+let niveaux = [];  // niveaux de compétence (grille de classe)
+let saveTimer = null;
+
+const DEFAULT_PALETTE = ['#8aa399','#a3b89a','#d9c089','#e8a06a','#e0654a'];
+const AFLP_PALETTE = ['#5b7c8d','#7a9b6e','#c9954a','#b1623f','#8a6a9b','#5a8a7a'];
+
+function uid(prefix='b'){
+  return prefix + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+}
+
+function setStatus(text){
+  const el = document.getElementById('saveStatus');
+  el.textContent = text;
+  if (text === 'Enregistré') setTimeout(() => { if(el.textContent==='Enregistré') el.textContent=''; }, 1500);
+}
+
+function goBack(){ location.href = 'index.html'; }
+
+function goToSchema(){
+  if (!fpsId) { alert('Enregistre d\'abord la FPS pour créer un schéma.'); return; }
+  location.href = `schema.html?fps=${fpsId}`;
+}
+
+function goToGrille(){
+  if (!fpsId) { alert('Enregistre d\'abord la FPS pour ouvrir la grille de classe.'); return; }
+  location.href = `grille.html?fps=${fpsId}`;
+}
+
+function openPrint(){
+  if (!fpsId) { alert('Enregistre d\'abord la FPS pour générer le PDF.'); return; }
+  saveFps(() => location.href = `print.html?id=${fpsId}`);
+}
+
+function escapeAttr(s){ return (s||'').replace(/"/g,'&quot;'); }
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// =================== BLOCS ===================
+
+const BLOCK_LABELS = {
+  bandeau:'Bandeau titre', objectif:'Objectif / citation', aflp:'Colonnes AFLP',
+  texte:'Texte riche', encadre:'Encadré', tableau:'Colonnes comparatives',
+  securite:'Sécurité', image:'Image / schéma'
+};
+
+function defaultBlockData(type){
+  switch(type){
+    case 'bandeau':
+      return { titre:'', sousTitre:'', couleur:'#3a4a4a' };
+    case 'objectif':
+      return { texte:'' };
+    case 'aflp':
+      return { cols:[
+        {label:'AFLP 1', couleur:AFLP_PALETTE[0], texte:''},
+        {label:'AFLP 2', couleur:AFLP_PALETTE[1], texte:''}
+      ]};
+    case 'texte':
+      return { html:'' };
+    case 'encadre':
+      return { titre:'', texte:'', couleur:'#e7eee9' };
+    case 'tableau':
+      return { cols:[
+        {titre:'Colonne A', couleur:'#e7eee9', texte:''},
+        {titre:'Colonne B', couleur:'#e7eee9', texte:''}
+      ]};
+    case 'securite':
+      return { texte:'' };
+    case 'image':
+      return { url:'', legende:'' };
+    default:
+      return {};
+  }
+}
+
+function addBlock(type){
+  blocks.push({ id: uid(), type, data: defaultBlockData(type) });
+  renderBlocks();
+  scheduleSave();
+}
+
+function removeBlock(id){
+  blocks = blocks.filter(b => b.id !== id);
+  renderBlocks();
+  scheduleSave();
+}
+
+function moveBlock(id, dir){
+  const i = blocks.findIndex(b => b.id === id);
+  const j = i + dir;
+  if (j < 0 || j >= blocks.length) return;
+  [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
+  renderBlocks();
+  scheduleSave();
+}
+
+function getBlock(id){ return blocks.find(b => b.id === id); }
+
+function renderBlocks(){
+  const list = document.getElementById('blocksList');
+  list.innerHTML = blocks.map((b,i) => `
+    <div class="block" data-id="${b.id}">
+      <div class="block-head">
+        <span class="btype">${BLOCK_LABELS[b.type] || b.type}</span>
+        <button onclick="moveBlock('${b.id}',-1)" ${i===0?'disabled style="opacity:.3"':''}>↑</button>
+        <button onclick="moveBlock('${b.id}',1)" ${i===blocks.length-1?'disabled style="opacity:.3"':''}>↓</button>
+        <button onclick="removeBlock('${b.id}')">×</button>
+      </div>
+      <div class="block-body">${renderBlockBody(b)}</div>
+    </div>
+  `).join('');
+  blocks.forEach(b => attachBlockEvents(b));
+}
+
+function renderBlockBody(b){
+  switch(b.type){
+    case 'bandeau': return renderBandeau(b);
+    case 'objectif': return renderObjectif(b);
+    case 'aflp': return renderAflp(b);
+    case 'texte': return renderTexte(b);
+    case 'encadre': return renderEncadre(b);
+    case 'tableau': return renderTableau(b);
+    case 'securite': return renderSecurite(b);
+    case 'image': return renderImage(b);
+    default: return '';
+  }
+}
+
+// ---- Bandeau titre ----
+function renderBandeau(b){
+  const d = b.data;
+  return `
+    <label>Couleur du bandeau</label>
+    <input type="color" class="niveau-color" style="margin-bottom:10px" value="${d.couleur}" data-field="couleur">
+    <label>Titre</label>
+    <input type="text" data-field="titre" value="${escapeAttr(d.titre)}" placeholder="ex. FPS · Course d'orientation">
+    <label>Sous-titre</label>
+    <input type="text" data-field="sousTitre" value="${escapeAttr(d.sousTitre)}" placeholder="ex. EPS · CAP · CA2 · CAP EPC 1">
+    <div class="banner-preview" style="background:${d.couleur}">
+      <p class="bp-title">${escapeHtml(d.titre) || 'Titre du bandeau'}</p>
+      <p class="bp-sub">${escapeHtml(d.sousTitre) || 'Sous-titre / contexte'}</p>
+    </div>
+  `;
+}
+
+// ---- Objectif / citation ----
+function renderObjectif(b){
+  const d = b.data;
+  return `
+    <label>Texte de l'objectif</label>
+    <textarea data-field="texte" placeholder="« Réaliser une activité physique de pleine nature en gérant les risques… »">${escapeHtml(d.texte)}</textarea>
+  `;
+}
+
+// ---- AFLP ----
+function renderAflp(b){
+  const cols = b.data.cols;
+  return `
+    <div class="aflp-grid">
+      ${cols.map((c,i) => `
+        <div class="aflp-col" style="background:${c.couleur}" data-ci="${i}">
+          <input type="text" data-cfield="label" value="${escapeAttr(c.label)}" placeholder="AFLP ${i+1}">
+          <textarea data-cfield="texte" placeholder="Description de la compétence travaillée…">${escapeHtml(c.texte)}</textarea>
+        </div>
+      `).join('')}
+    </div>
+    <div class="aflp-actions">
+      <button data-action="add-col">+ Ajouter une colonne</button>
+      <button data-action="remove-col">− Retirer la dernière</button>
+    </div>
+  `;
+}
+
+// ---- Texte riche ----
+function renderTexte(b){
+  const d = b.data;
+  return `
+    <div class="rt-toolbar">
+      <button data-cmd="bold" title="Gras"><b>G</b></button>
+      <button data-cmd="italic" title="Italique"><i>I</i></button>
+      <button data-cmd="underline" title="Souligné"><u>S</u></button>
+      <button data-cmd="hiliteColor" title="Surligner">⬛</button>
+      <input type="color" data-cmd="foreColor" title="Couleur du texte" value="#2b3535">
+    </div>
+    <div class="rt-editable" contenteditable="true" data-field="html">${d.html || ''}</div>
+  `;
+}
+
+// ---- Encadré ----
+function renderEncadre(b){
+  const d = b.data;
+  return `
+    <label>Couleur de fond</label>
+    <input type="color" class="niveau-color" style="margin-bottom:10px" value="${d.couleur}" data-field="couleur">
+    <label>Titre (optionnel)</label>
+    <input type="text" data-field="titre" value="${escapeAttr(d.titre)}" placeholder="ex. Règle spéciale">
+    <label>Contenu</label>
+    <textarea data-field="texte" placeholder="Texte de l'encadré…">${escapeHtml(d.texte)}</textarea>
+    <div class="callout" style="background:${d.couleur}">
+      ${d.titre ? `<strong>${escapeHtml(d.titre)}</strong><br>` : ''}${escapeHtml(d.texte) || 'Aperçu de l\'encadré'}
+    </div>
+  `;
+}
+
+// ---- Tableau / colonnes comparatives ----
+function renderTableau(b){
+  const cols = b.data.cols;
+  return `
+    <div class="table-cols" style="grid-template-columns:repeat(${cols.length},1fr)">
+      ${cols.map((c,i) => `
+        <div class="table-col" data-ci="${i}">
+          <div class="tc-head" style="background:${c.couleur}">
+            <input type="text" data-cfield="titre" value="${escapeAttr(c.titre)}" placeholder="Titre colonne" style="background:transparent;border:none;font-weight:700;font-size:12px;padding:0;margin:0;color:inherit;">
+          </div>
+          <textarea data-cfield="texte" placeholder="Contenu…">${escapeHtml(c.texte)}</textarea>
+        </div>
+      `).join('')}
+    </div>
+    <div class="aflp-actions">
+      <button data-action="add-col">+ Ajouter une colonne</button>
+      <button data-action="remove-col">− Retirer la dernière</button>
+    </div>
+  `;
+}
+
+// ---- Sécurité ----
+function renderSecurite(b){
+  const d = b.data;
+  return `
+    <label>Contenu</label>
+    <textarea data-field="texte" placeholder="ex. Sécurité : l'application dispose d'un bouton SOS…">${escapeHtml(d.texte)}</textarea>
+    <div class="callout" style="background:#fbe4e1; border-color:#e0654a; color:#7a3325;">
+      <strong>Sécurité</strong> — ${escapeHtml(d.texte) || 'Aperçu du message de sécurité'}
+    </div>
+  `;
+}
+
+// ---- Image ----
+function renderImage(b){
+  const d = b.data;
+  if (d.url){
+    return `
+      <div class="img-block">
+        <img src="${d.url}" alt="">
+        <label style="margin-top:10px">Légende</label>
+        <input type="text" data-field="legende" value="${escapeAttr(d.legende)}" placeholder="Légende de l'image">
+        <div class="aflp-actions"><button data-action="replace-img">Remplacer l'image</button></div>
+      </div>
+    `;
+  }
+  return `<div class="img-zone" data-action="upload-img">Touchez pour ajouter une image (≤ 4 Mo)</div>`;
+}
+
+// ---- Événements liés à chaque bloc ----
+function attachBlockEvents(b){
+  const el = document.querySelector(`.block[data-id="${b.id}"]`);
+  if (!el) return;
+
+  // champs simples (input/textarea/select) avec data-field
+  el.querySelectorAll('[data-field]').forEach(field => {
+    const ev = field.tagName === 'SELECT' ? 'change' : 'input';
+    field.addEventListener(ev, () => {
+      b.data[field.dataset.field] = field.value;
+      if (b.type === 'bandeau' || b.type === 'encadre' || b.type === 'securite') updateBlockPreview(b);
+      scheduleSave();
+    });
+  });
+
+  // contenteditable
+  const rt = el.querySelector('.rt-editable');
+  if (rt){
+    rt.addEventListener('input', () => {
+      b.data.html = rt.innerHTML;
+      scheduleSave();
+    });
+  }
+
+  // toolbar texte riche
+  el.querySelectorAll('.rt-toolbar [data-cmd]').forEach(btn => {
+    if (btn.tagName === 'INPUT'){
+      btn.addEventListener('input', () => {
+        rt.focus();
+        document.execCommand(btn.dataset.cmd, false, btn.value);
+        b.data.html = rt.innerHTML;
+        scheduleSave();
+      });
+    } else {
+      btn.addEventListener('click', () => {
+        rt.focus();
+        if (btn.dataset.cmd === 'hiliteColor'){
+          document.execCommand('hiliteColor', false, '#fef3a0');
+        } else {
+          document.execCommand(btn.dataset.cmd, false, null);
+        }
+        b.data.html = rt.innerHTML;
+        scheduleSave();
+      });
+    }
+  });
+
+  // colonnes (aflp / tableau)
+  el.querySelectorAll('[data-ci]').forEach(colEl => {
+    const ci = parseInt(colEl.dataset.ci, 10);
+    colEl.querySelectorAll('[data-cfield]').forEach(field => {
+      field.addEventListener('input', () => {
+        b.data.cols[ci][field.dataset.cfield] = field.value;
+        scheduleSave();
+      });
+    });
+  });
+
+  // actions colonnes
+  el.querySelectorAll('[data-action="add-col"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i = b.data.cols.length;
+      if (b.type === 'aflp'){
+        b.data.cols.push({ label:`AFLP ${i+1}`, couleur:AFLP_PALETTE[i % AFLP_PALETTE.length], texte:'' });
+      } else {
+        b.data.cols.push({ titre:`Colonne ${i+1}`, couleur:'#e7eee9', texte:'' });
+      }
+      renderBlocks();
+      scheduleSave();
+    });
+  });
+  el.querySelectorAll('[data-action="remove-col"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (b.data.cols.length <= 1) return;
+      b.data.cols.pop();
+      renderBlocks();
+      scheduleSave();
+    });
+  });
+
+  // image
+  const uploadZone = el.querySelector('[data-action="upload-img"], [data-action="replace-img"]');
+  if (uploadZone){
+    uploadZone.addEventListener('click', () => uploadImageForBlock(b));
+  }
+}
+
+function updateBlockPreview(b){
+  // re-render uniquement la preview sans perdre le focus du champ texte : on régénère le bloc complet
+  // mais on le fait au blur pour éviter de casser la saisie en cours -> simplification: re-render complet
+  renderBlocks();
+}
+
+function uploadImageForBlock(b){
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/*';
+  input.onchange = async () => {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > 4*1024*1024){
+      alert('Image trop volumineuse (max 4 Mo).');
+      return;
+    }
+    const dataUrl = await new Promise((res, rej) => {
+      const r = new FileReader();
+      r.onload = () => res(r.result);
+      r.onerror = rej;
+      r.readAsDataURL(file);
+    });
+    b.data.url = dataUrl;
+    renderBlocks();
+    scheduleSave();
+  };
+  input.click();
+}
+
+// =================== NIVEAUX (grille de classe) ===================
+function renderNiveaux(){
+  const list = document.getElementById('niveauxList');
+  list.innerHTML = niveaux.map((n, i) => `
+    <div class="niveau-item" data-i="${i}">
+      <input type="color" class="niveau-color" value="${n.couleur}" oninput="updateNiveau(${i},'couleur',this.value)">
+      <input type="text" placeholder="Nom du niveau (ex. Niveau 1 — Découverte)" value="${escapeAttr(n.label)}" oninput="updateNiveau(${i},'label',this.value)">
+      <button class="niveau-remove" onclick="removeNiveau(${i})">×</button>
+    </div>
+  `).join('');
+}
+
+function addNiveau(){
+  const i = niveaux.length;
+  niveaux.push({ id: uid('n'), label: `Niveau ${i+1}`, couleur: DEFAULT_PALETTE[i % DEFAULT_PALETTE.length] });
+  renderNiveaux();
+  scheduleSave();
+}
+
+function removeNiveau(i){
+  niveaux.splice(i,1);
+  renderNiveaux();
+  scheduleSave();
+}
+
+function updateNiveau(i, key, val){
+  niveaux[i][key] = val;
+  scheduleSave();
+}
+
+// =================== CHARGEMENT / SAUVEGARDE ===================
+function loadFps(){
+  if (!fpsId){
+    niveaux = [
+      { id: uid('n'), label: 'Niveau 1 — Découverte', couleur: DEFAULT_PALETTE[0] },
+      { id: uid('n'), label: 'Niveau 2 — Adaptation', couleur: DEFAULT_PALETTE[2] },
+      { id: uid('n'), label: 'Niveau 3 — Maîtrise', couleur: DEFAULT_PALETTE[4] },
+    ];
+    blocks = [];
+    renderNiveaux();
+    renderBlocks();
+    return;
+  }
+  ROOT.child('fps/' + fpsId).once('value', (snap) => {
+    const data = snap.val();
+    if (!data) return;
+    document.getElementById('titre').value = data.titre || '';
+    document.getElementById('sousTitre').value = data.sousTitre || '';
+    document.getElementById('apsa').value = data.apsa || 'default';
+    document.getElementById('ca').value = data.ca || '';
+    document.getElementById('niveauScolaire').value = data.niveauScolaire || '';
+    niveaux = data.niveaux || [];
+    blocks = data.blocks || [];
+    renderNiveaux();
+    renderBlocks();
+  });
+}
+
+function buildPayload(){
+  return {
+    titre: document.getElementById('titre').value.trim(),
+    sousTitre: document.getElementById('sousTitre').value.trim(),
+    apsa: document.getElementById('apsa').value,
+    ca: document.getElementById('ca').value,
+    niveauScolaire: document.getElementById('niveauScolaire').value.trim(),
+    niveaux: niveaux,
+    blocks: blocks,
+    archived: false,
+    updatedAt: Date.now()
+  };
+}
+
+function saveFps(cb){
+  const payload = buildPayload();
+  if (!payload.titre){
+    alert('Ajoute un titre avant d\'enregistrer.');
+    return;
+  }
+  setStatus('Enregistrement…');
+  if (!fpsId){
+    fpsId = uid('f');
+    history.replaceState(null, '', `editeur.html?id=${fpsId}`);
+  }
+  ROOT.child('fps/' + fpsId).update(payload, (err) => {
+    setStatus(err ? 'Erreur' : 'Enregistré');
+    if (cb) cb();
+  });
+}
+
+function duplicateFps(){
+  const payload = buildPayload();
+  if (!payload.titre){ alert('Ajoute un titre avant de dupliquer.'); return; }
+  payload.titre = payload.titre + ' (copie)';
+  payload.niveaux = niveaux.map(n => ({...n, id: uid('n')}));
+  payload.blocks = blocks.map(b => ({...b, id: uid('b')}));
+  const newId = uid('f');
+  ROOT.child('fps/' + newId).set(payload, (err) => {
+    if (!err) location.href = `editeur.html?id=${newId}`;
+  });
+}
+
+function scheduleSave(){
+  if (!fpsId) return; // pas d'autosave avant la première sauvegarde manuelle
+  clearTimeout(saveTimer);
+  setStatus('…');
+  saveTimer = setTimeout(saveFps, 800);
+}
+
+// champs d'identification : autosave
+document.querySelectorAll('#titre, #sousTitre, #apsa, #ca, #niveauScolaire').forEach(el => {
+  el.addEventListener('input', scheduleSave);
+  el.addEventListener('change', scheduleSave);
+});
+
+loadFps();
