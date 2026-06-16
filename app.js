@@ -12,7 +12,6 @@ const CA_COLUMNS = [
   { id: '3', label: 'CA3' },
   { id: '4', label: 'CA4' },
   { id: '5', label: 'CA5' },
-  { id: '', label: 'Sans CA' }
 ];
 
 const LEVEL_BOARDS = [
