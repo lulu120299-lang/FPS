@@ -1,0 +1,92 @@
+/* ==== Carnet de coach — thème partagé ==== */
+@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+:root{
+  --kraft:#d9c9a8;
+  --kraft-dark:#c4b08a;
+  --card:#f3ead4;
+  --paper-card:#f3ead4; /* alias pour compat avec anciens styles */
+  --ink:#3a2f1f;
+  --ink-soft:#6b5c42;
+  --slate:#3a2f1f;       /* alias */
+  --slate-light:#6b5c42; /* alias */
+  --stamp-red:#a33d2e;
+  --stamp-green:#4a6b4a;
+  --stamp-blue:#3d5a72;
+  --corail:#a33d2e;       /* alias accent */
+  --corail-soft:#e9d3c8;
+  --sage:#4a6b4a;          /* alias accent secondaire */
+  --sage-pale:#e3ddc6;
+  --line:#b6a378;
+  --line-soft:#c9b990;
+  --font-stamp:'Permanent Marker', cursive;
+  --font-hand:'Kalam', cursive;
+  --font-display:'Permanent Marker', cursive;
+  --font-body:'Kalam', cursive;
+  --font-mono:'JetBrains Mono', monospace;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+body{
+  margin:0;
+  font-family:var(--font-hand);
+  background:var(--kraft);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(0,0,0,.015) 0, rgba(0,0,0,.015) 1px, transparent 1px, transparent 3px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.01) 0, rgba(0,0,0,.01) 1px, transparent 1px, transparent 3px);
+  color:var(--ink);
+  min-height:100vh;
+}
+
+/* ---- Header commun (pages secondaires : éditeur, grille, schéma) ---- */
+.app-header{
+  position:sticky; top:0; z-index:30;
+  background:var(--kraft);
+  border-bottom:2px solid var(--ink);
+  padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;
+  display:flex; align-items:center; gap:8px;
+}
+.app-header .back{
+  background:none;border:none;color:var(--ink);font-size:24px;font-weight:700;
+  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer; flex:none; font-family:var(--font-hand);
+}
+.app-header .htitle{
+  font-family:var(--font-stamp);
+  font-size:15px;
+  flex:1;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  color:var(--ink);
+}
+.app-header .save-status{
+  font-family:var(--font-mono);
+  font-size:10.5px;
+  color:var(--stamp-green);
+  flex:none;
+}
+.app-header .header-btn{
+  background:var(--card); border:1.5px solid var(--ink);
+  color:var(--ink);
+  font-size:11px; font-family:var(--font-mono); letter-spacing:.03em;
+  text-transform:uppercase;
+  padding:6px 10px; cursor:pointer; flex:none;
+  border-radius:3px;
+}
+.app-header .header-btn:active{ box-shadow:none; transform:translateY(1px); }
+
+/* ---- Boutons partagés ---- */
+.btn-primary, .btn-secondary{
+  border:2px solid var(--ink); padding:11px;
+  font-size:14px; font-weight:700; font-family:var(--font-hand); cursor:pointer;
+  border-radius:3px;
+}
+.btn-primary{background:var(--stamp-red); color:#fff; box-shadow:2px 2px 0 var(--ink);}
+.btn-primary:active{box-shadow:none; transform:translate(1px,1px);}
+.btn-secondary{background:var(--card); color:var(--ink); box-shadow:2px 2px 0 rgba(58,47,31,.3);}
+.btn-secondary:active{box-shadow:none; transform:translate(1px,1px);}
+
+/* ---- Tampons (badges niveau scolaire) ---- */
+.stamp.cap{color:var(--stamp-blue);}
+.stamp.seconde{color:var(--stamp-green);}
+.stamp.bacpro{color:var(--stamp-red);}
