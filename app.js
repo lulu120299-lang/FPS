@@ -2,8 +2,8 @@
 
 const APSA_ICONS = {
   'demi-fond':'⚡️','course-duree':'🏃','course-vitesse':'💨','orientation':'🧭',
-  'acrosport':'🤸','badminton':'🏸','tennis-table':'🏓','volley':'🏐',
-  'athletisme':'🏃‍♂️','musculation':'🏋️','default':'📋'
+  'acrosport':'🤸','badminton':'🏸','tennis-table':'🏓','volley':'🏐','gymnastique':'🤸‍♂️',
+  'athletisme':'🏃‍♂️','musculation':'🏋️','rugby':'🏉', 'natation':'🏊', 'default':'📋'
 };
 
 const CA_COLUMNS = [
