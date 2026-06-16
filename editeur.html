@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Éditeur FPS</title>
+<meta name="theme-color" content="#2b3535">
+<style>
+  :root{
+    --ink:#2b3535;
+    --slate:#3a4a4a;
+    --slate-light:#5a6e6e;
+    --sage:#8aa399;
+    --sage-pale:#eef2ee;
+    --paper:#eceae4;
+    --paper-card:#ffffff;
+    --corail:#e0654a;
+    --corail-soft:#f7ddd5;
+    --line:#c7ccc3;
+    --line-soft:#dee1da;
+    --font-display:'Fjalla One','Arial Narrow',sans-serif;
+    --font-body:-apple-system,'Inter',system-ui,sans-serif;
+    --font-mono:'JetBrains Mono','SF Mono',monospace;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    background:var(--paper);
+    color:var(--ink);
+    min-height:100vh;
+    padding-bottom:80px;
+  }
+  header{
+    position:sticky; top:0; z-index:30;
+    background:var(--slate);
+    color:#fff;
+    padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;
+    display:flex; align-items:center; gap:8px;
+    border-bottom:3px solid var(--corail);
+  }
+  .back{
+    background:none;border:none;color:#fff;font-size:22px;
+    width:34px;height:34px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer; flex:none;
+  }
+  .htitle{
+    font-family:var(--font-display);
+    text-transform:uppercase;
+    letter-spacing:.04em;
+    font-size:15px;
+    flex:1;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .save-status{
+    font-family:var(--font-mono);
+    font-size:11px;
+    color:var(--sage);
+    flex:none;
+  }
+  .header-btn{
+    background:none; border:1px solid rgba(255,255,255,.35);
+    color:#fff;
+    font-size:11.5px; font-family:var(--font-mono); letter-spacing:.03em;
+    text-transform:uppercase;
+    padding:6px 10px; cursor:pointer; flex:none;
+  }
+
+  main{padding:14px;max-width:860px;margin:0 auto;}
+
+  /* ---- Sections type tableau ---- */
+  .section{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    margin-bottom:14px;
+  }
+  .section-head{
+    background:var(--sage-pale);
+    border-bottom:1px solid var(--line);
+    padding:9px 14px;
+    font-family:var(--font-display);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    font-size:12px;
+    color:var(--slate);
+  }
+  .section-body{padding:14px;}
+
+  label{
+    display:block;
+    font-size:11.5px;
+    color:var(--slate-light);
+    margin:0 0 4px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.02em;
+  }
+  input[type=text], textarea, select{
+    width:100%;
+    border:1px solid var(--line);
+    padding:9px 11px;
+    font-size:15px;
+    font-family:var(--font-body);
+    background:var(--paper);
+    color:var(--ink);
+    margin-bottom:12px;
+  }
+  input[type=text]:focus, textarea:focus, select:focus{outline:none; border-color:var(--slate);}
+  textarea{resize:vertical; min-height:60px;}
+  .row{display:flex; gap:10px;}
+  .row > *{flex:1;}
+
+  /* ---- Blocs (cartes type Padlet) ---- */
+  .blocks{display:flex; flex-direction:column; gap:10px; margin-bottom:14px;}
+  .block{
+    background:var(--paper-card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--block-color, var(--sage));
+  }
+  .block-head{
+    display:flex; align-items:center; gap:6px;
+    padding:8px 12px;
+    background:var(--sage-pale);
+    border-bottom:1px solid var(--line);
+  }
+  .block-head .btype{
+    font-family:var(--font-mono);
+    font-size:10px; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--slate-light);
+    flex:1;
+  }
+  .block-head button{
+    background:none; border:none; cursor:pointer;
+    color:var(--slate-light); font-size:15px;
+    width:26px; height:26px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .block-head button:active{color:var(--corail);}
+  .block-body{padding:12px;}
+
+  /* Toolbar texte riche */
+  .rt-toolbar{
+    display:flex; gap:6px; flex-wrap:wrap;
+    margin-bottom:8px;
+  }
+  .rt-toolbar button{
+    border:1px solid var(--line);
+    background:var(--paper);
+    width:30px; height:30px;
+    font-size:13px; cursor:pointer;
+    color:var(--slate);
+  }
+  .rt-toolbar button.active{background:var(--slate); color:#fff; border-color:var(--slate);}
+  .rt-toolbar input[type=color]{
+    width:30px; height:30px; border:1px solid var(--line); padding:2px; cursor:pointer;
+  }
+  .rt-editable{
+    border:1px solid var(--line);
+    padding:9px 11px;
+    min-height:80px;
+    font-size:14px;
+    line-height:1.6;
+    background:var(--paper);
+    outline:none;
+  }
+  .rt-editable:focus{border-color:var(--slate);}
+  .rt-editable mark{background:#fef3a0; padding:0 1px;}
+
+  /* Bandeau titre */
+  .banner-preview{
+    padding:13px 15px;
+    color:#fff;
+  }
+  .banner-preview .bp-title{font-weight:700; font-size:16px; margin:0 0 3px;}
+  .banner-preview .bp-sub{font-size:11.5px; opacity:.85;}
+
+  /* Citation/objectif */
+  .quote-box{
+    border-left:3px solid var(--corail);
+    background:var(--corail-soft);
+    padding:11px 14px;
+    font-style:italic;
+    font-size:13.5px;
+  }
+
+  /* AFLP grid : pastille label + note, pas de zone texte */
+  .aflp-grid{
+    display:grid; gap:1px;
+    grid-template-columns:repeat(auto-fit, minmax(130px,1fr));
+    border:1px solid var(--line);
+  }
+  .aflp-col{
+    padding:11px 10px; color:#fff;
+    display:flex; flex-direction:column; gap:6px;
+    min-height:64px;
+  }
+  .aflp-col input[type=text]{
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.32);
+    color:#fff; margin-bottom:0; font-size:12px; font-weight:700;
+    padding:6px 8px;
+  }
+  .aflp-col input[type=text]::placeholder{color:rgba(255,255,255,.7);}
+  .aflp-col .anote{
+    display:flex; align-items:center; gap:5px;
+  }
+  .aflp-col .anote input[type=text]{
+    width:70px; text-align:center; font-family:var(--font-mono); margin:0;
+  }
+  .aflp-col .anote span{font-size:11px; opacity:.85;}
+  .aflp-actions{display:flex; gap:8px; margin-top:10px;}
+  .aflp-actions button{
+    border:1px dashed var(--sage); background:var(--sage-pale); color:var(--slate);
+    padding:7px 12px; font-size:12px; cursor:pointer; font-family:var(--font-body);
+  }
+
+  /* Encadré (callout) */
+  .callout{
+    padding:11px 14px; font-size:13.5px;
+    border:1px solid var(--line);
+  }
+  .callout strong{display:block; margin-bottom:4px;}
+
+  /* Tableau comparatif : note en avant */
+  .table-cols{display:grid; gap:1px; border:1px solid var(--line);}
+  .table-col{background:var(--paper-card);}
+  .table-col .tc-head{
+    padding:8px 10px;
+  }
+  .table-col .tc-head input[type=text]{
+    background:transparent; border:none; font-weight:700; font-size:12px;
+    padding:0; margin:0; color:inherit;
+  }
+  .table-col .tc-note{
+    padding:10px 10px 4px;
+    display:flex; align-items:baseline; gap:6px;
+  }
+  .table-col .tc-note input[type=text]{
+    width:80px; font-family:var(--font-mono); font-weight:700; font-size:20px;
+    text-align:center; margin:0; border-color:var(--line);
+    color:var(--corail);
+  }
+  .table-col .tc-note span{font-size:10.5px; color:var(--slate-light); text-transform:uppercase; letter-spacing:.03em;}
+  .table-col textarea{margin:6px 10px 10px; width:calc(100% - 20px); min-height:50px; font-size:13px;}
+
+  /* Image */
+  .img-block img{width:100%; display:block;}
+  .img-zone{
+    border:1.5px dashed var(--line);
+    padding:24px; text-align:center; color:var(--slate-light); font-size:13px; cursor:pointer;
+  }
+
+  /* Picker d'ajout de bloc */
+  .add-block-zone{
+    display:grid; grid-template-columns:repeat(2,1fr); gap:1px;
+    border:1px solid var(--line);
+  }
+  .add-block-btn{
+    border:none;
+    background:var(--paper-card);
+    color:var(--slate);
+    padding:12px 10px;
+    font-size:13px; font-weight:600;
+    cursor:pointer; text-align:left;
+    font-family:var(--font-body);
+    display:flex; flex-direction:column; gap:2px;
+  }
+  .add-block-btn:active{background:var(--sage-pale);}
+  .add-block-btn small{font-weight:400; font-size:11px; color:var(--slate-light); font-family:var(--font-mono);}
+
+  /* Niveaux (grille de classe) */
+  .niveau-item{
+    display:flex; align-items:center; gap:10px;
+    padding:9px 10px;
+    border:1px solid var(--line);
+    margin-bottom:6px;
+    background:var(--paper);
+  }
+  .niveau-color{width:26px;height:26px;border-radius:50%; flex:none; border:none; cursor:pointer; padding:0;}
+  .niveau-item input[type=text]{margin:0; flex:1;}
+  .niveau-remove{flex:none; background:none; border:none; color:var(--slate-light); font-size:19px; cursor:pointer; width:28px;height:28px;}
+  .btn-add{
+    width:100%; border:1.5px dashed var(--sage); background:var(--sage-pale); color:var(--slate);
+    padding:10px; font-size:14px; font-weight:600; cursor:pointer; font-family:var(--font-body);
+  }
+
+  .link-card{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:13px 14px; background:var(--sage-pale); border:1px solid var(--line);
+    cursor:pointer; color:var(--slate); font-size:14px; font-weight:600;
+  }
+  .link-card .sub{display:block; font-weight:400; font-size:12px; color:var(--slate-light); margin-top:2px;}
+
+  /* Liste de schémas */
+  .schema-item{
+    display:flex; align-items:center; gap:10px;
+    border:1px solid var(--line);
+    padding:8px; margin-bottom:6px; cursor:pointer;
+    background:var(--paper);
+  }
+  .schema-item:active{border-color:var(--sage);}
+  .schema-item img{
+    width:54px; height:40px; object-fit:cover; flex:none;
+    background:#fff; border:1px solid var(--line);
+  }
+  .schema-item .sname{flex:1; font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .schema-item .sdate{font-family:var(--font-mono); font-size:10px; color:var(--slate-light); flex:none;}
+  .empty-hint{font-size:12px; color:var(--slate-light); margin:0 0 8px;}
+
+  /* Picker overlay */
+  .picker-overlay{
+    position:fixed; inset:0; background:rgba(43,53,53,.45);
+    display:none; align-items:flex-end; justify-content:center; z-index:50;
+  }
+  .picker-overlay.open{display:flex;}
+  .picker-sheet{
+    background:var(--paper-card); border-top:3px solid var(--corail);
+    padding:16px; width:100%; max-width:860px; max-height:75vh; overflow-y:auto;
+  }
+  .picker-sheet h4{
+    font-family:var(--font-display); text-transform:uppercase; letter-spacing:.05em;
+    font-size:13px; color:var(--slate); margin:0 0 12px;
+  }
+  .import-tabs{display:flex; border:1px solid var(--line); margin-bottom:12px;}
+  .import-tab{
+    flex:1; text-align:center; padding:9px; font-size:12px; font-weight:600;
+    background:var(--paper-card); color:var(--slate-light); cursor:pointer;
+    border-right:1px solid var(--line);
+  }
+  .import-tab:last-child{border-right:none;}
+  .import-tab.active{background:var(--slate); color:#fff;}
+  .import-filezone{
+    border:1.5px dashed var(--line);
+    padding:30px 14px; text-align:center; color:var(--slate-light); font-size:13px; cursor:pointer;
+    margin-bottom:12px;
+  }
+  .import-filezone.has-file{border-color:var(--sage); color:var(--ink); font-weight:600;}
+
+  /* Actions bas de page */
+  .actions{
+    position:fixed; bottom:0; left:0; right:0;
+    background:var(--paper-card);
+    border-top:1px solid var(--line);
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom));
+    display:flex; gap:10px;
+    z-index:10;
+  }
+  .btn-primary, .btn-secondary{
+    flex:1; border:none; padding:13px;
+    font-size:15px; font-weight:600; font-family:var(--font-body); cursor:pointer;
+  }
+  .btn-primary{background:var(--corail); color:#fff;}
+  .btn-secondary{background:var(--sage-pale); color:var(--slate); border:1px solid var(--line);}
+</style>
+</head>
+<body>
+<header>
+  <button class="back" onclick="goBack()">‹</button>
+  <div class="htitle">Éditeur FPS</div>
+  <button class="header-btn" onclick="openImportPanel()">Import</button>
+  <button class="header-btn" onclick="openPrint()">PDF</button>
+  <div class="save-status" id="saveStatus"></div>
+</header>
+
+<main>
+
+  <div class="section">
+    <div class="section-head">Identification</div>
+    <div class="section-body">
+      <label for="titre">Titre de la FPS</label>
+      <input type="text" id="titre" placeholder="ex. FPS · Course d'orientation">
+
+      <label for="sousTitre">Sous-titre / contexte</label>
+      <input type="text" id="sousTitre" placeholder="ex. EPS · CAP lycée professionnel · Champ d'apprentissage n°2 · CAP EPC 1">
+
+      <div class="row">
+        <div>
+          <label for="apsa">APSA</label>
+          <select id="apsa">
+            <option value="demi-fond">Course de demi-fond</option>
+            <option value="course-duree">Course en durée</option>
+            <option value="course-vitesse">Course de vitesse</option>
+            <option value="orientation">Course d'orientation</option>
+            <option value="acrosport">Acrosport</option>
+            <option value="badminton">Badminton</option>
+            <option value="tennis-table">Tennis de table</option>
+            <option value="volley">Volley-ball</option>
+            <option value="athletisme">Athlétisme multisport</option>
+            <option value="musculation">Musculation / CrossFit</option>
+            <option value="default">Autre</option>
+          </select>
+        </div>
+        <div>
+          <label for="ca">Champ d'apprentissage</label>
+          <select id="ca">
+            <option value="">—</option>
+            <option value="1">CA1</option>
+            <option value="2">CA2</option>
+            <option value="3">CA3</option>
+            <option value="4">CA4</option>
+            <option value="5">CA5</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="niveauScolaire">Niveau / classe(s) concernées</label>
+      <input type="text" id="niveauScolaire" placeholder="ex. CAP, Seconde, Bac Pro">
+    </div>
+  </div>
+
+  <!-- Liste des blocs de contenu -->
+  <div class="blocks" id="blocksList"></div>
+
+  <div class="section">
+    <div class="section-head">Ajouter un bloc</div>
+    <div class="section-body">
+      <div class="add-block-zone">
+        <button class="add-block-btn" onclick="addBlock('bandeau')">Bandeau titre<small>Titre coloré + sous-titre</small></button>
+        <button class="add-block-btn" onclick="addBlock('objectif')">Objectif / citation<small>Encadré italique</small></button>
+        <button class="add-block-btn" onclick="addBlock('aflp')">Colonnes AFLP<small>Compétences travaillées</small></button>
+        <button class="add-block-btn" onclick="addBlock('texte')">Texte riche<small>Dispositif, consignes…</small></button>
+        <button class="add-block-btn" onclick="addBlock('encadre')">Encadré / règle<small>Information mise en valeur</small></button>
+        <button class="add-block-btn" onclick="addBlock('tableau')">Colonnes comparatives<small>Bonus, notes par degré…</small></button>
+        <button class="add-block-btn" onclick="addBlock('securite')">Sécurité<small>Encadré rouge dédié</small></button>
+        <button class="add-block-btn" onclick="addBlock('image')">Image (upload)<small>Photo ou capture, ≤4 Mo</small></button>
+        <button class="add-block-btn" onclick="openSchemaPicker()">Image depuis un schéma<small>Choisir un schéma existant</small></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Schémas de cette FPS</div>
+    <div class="section-body">
+      <div id="schemasList"></div>
+      <button class="btn-add" onclick="goToSchema()">+ Créer un nouveau schéma</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Niveaux de compétence (grille de classe)</div>
+    <div class="section-body">
+      <div id="niveauxList"></div>
+      <button class="btn-add" onclick="addNiveau()">+ Ajouter un niveau</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-body">
+      <div class="link-card" onclick="goToGrille()">
+        Grille de classe
+        <span class="sub">Importer une classe et répartir les élèves par niveau</span>
+        <span style="font-size:20px;">›</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- Picker de schémas (overlay) -->
+<div class="picker-overlay" id="schemaPickerOverlay" onclick="if(event.target===this) closeSchemaPicker()">
+  <div class="picker-sheet">
+    <h4>Choisir un schéma</h4>
+    <div id="schemaPickerList"></div>
+    <button class="btn-secondary" style="width:100%;margin-top:8px" onclick="closeSchemaPicker()">Annuler</button>
+  </div>
+</div>
+
+<!-- Import (overlay) -->
+<div class="picker-overlay" id="importOverlay" onclick="if(event.target===this) closeImportPanel()">
+  <div class="picker-sheet">
+    <h4>Importer une FPS</h4>
+    <p style="font-size:12px;color:var(--slate-light);margin:0 0 10px;line-height:1.5;">
+      Si une FPS est déjà ouverte, son contenu sera <strong>remplacé</strong> après confirmation.
+    </p>
+    <div class="import-tabs">
+      <div class="import-tab active" data-tab="file" onclick="switchImportTab('file')">Fichier .json</div>
+      <div class="import-tab" data-tab="paste" onclick="switchImportTab('paste')">Coller le texte</div>
+    </div>
+    <div id="importFileTab">
+      <div class="import-filezone" id="importFileZone" onclick="document.getElementById('importFileInput').click()">
+        Touchez pour choisir un fichier .json
+      </div>
+      <input type="file" id="importFileInput" accept=".json,application/json" style="display:none">
+    </div>
+    <div id="importPasteTab" style="display:none">
+      <textarea id="importTextarea" style="min-height:200px;font-family:var(--font-mono);font-size:12px;" placeholder='{"titre": "...", "blocks": [...], "niveaux": [...]}'></textarea>
+    </div>
+    <div id="importError" style="display:none;color:#b1623f;font-size:12px;margin:8px 0;"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn-secondary" style="flex:1" onclick="closeImportPanel()">Annuler</button>
+      <button class="btn-primary" style="flex:1" onclick="applyImport()">Importer</button>
+    </div>
+  </div>
+</div>
+
+<div class="actions">
+  <button class="btn-secondary" onclick="duplicateFps()">Dupliquer</button>
+  <button class="btn-primary" onclick="saveFps()">Enregistrer</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="firebase-config.js"></script>
+<script src="editeur.js"></script>
+</body>
+</html>
