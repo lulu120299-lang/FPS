@@ -2,8 +2,8 @@
 
 const APSA_ICONS = {
   'demi-fond':'⚡️','course-duree':'🏃','course-vitesse':'💨','orientation':'🧭',
-  'acrosport':'🤸','badminton':'🏸','tennis-table':'🏓','volley':'🏐','gymnastique':'🤸‍♂️',
-  'athletisme':'🏃‍♂️','musculation':'🏋️','rugby':'🏉', 'natation':'🏊', 'default':'📋'
+  'acrosport':'🤸','badminton':'🏸','tennis-table':'🏓','volley':'🏐',
+  'athletisme':'🏃‍♂️','musculation':'🏋️','default':'📋'
 };
 
 const CA_COLUMNS = [
@@ -12,6 +12,7 @@ const CA_COLUMNS = [
   { id: '3', label: 'CA3' },
   { id: '4', label: 'CA4' },
   { id: '5', label: 'CA5' },
+  { id: '', label: 'Sans CA' }
 ];
 
 const LEVEL_BOARDS = [
@@ -100,7 +101,7 @@ function renderBoards(){
         || `<div class="column-empty">Vide</div>`;
       return `
         <div class="column" data-board="${board.id}" data-ca="${col.id}">
-          <div class="column-head"><span>${col.label}</span><span>${colEntries.length}</span></div>
+          <div class="column-head"><span class="ca-badge">${col.label}</span><span class="ca-count">${colEntries.length}</span></div>
           <div class="column-body" data-board="${board.id}" data-ca="${col.id}">${cardsHtml}</div>
         </div>`;
     }).join('');
@@ -109,7 +110,8 @@ function renderBoards(){
       <div class="level-board">
         <div class="level-head">
           <h2>${board.label}</h2>
-          <span class="count">${entries.length} fiche${entries.length>1?'s':''}</span>
+          <span class="count">${entries.length}</span>
+          <div class="divider"></div>
         </div>
         <div class="columns">${cols}</div>
       </div>`;

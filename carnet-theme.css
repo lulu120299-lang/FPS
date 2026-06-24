@@ -1,28 +1,50 @@
-/* ==== Carnet de coach — thème partagé ==== */
-@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Kalam:wght@400;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+/* ==== FPS Manager — Thème dark mode (inspiré carnet-suivi-EPS) ==== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 :root{
-  --kraft:#d9c9a8;
-  --kraft-dark:#c4b08a;
-  --card:#f3ead4;
-  --paper-card:#f3ead4; /* alias pour compat avec anciens styles */
-  --ink:#3a2f1f;
-  --ink-soft:#6b5c42;
-  --slate:#3a2f1f;       /* alias */
-  --slate-light:#6b5c42; /* alias */
-  --stamp-red:#a33d2e;
-  --stamp-green:#4a6b4a;
-  --stamp-blue:#3d5a72;
-  --corail:#a33d2e;       /* alias accent */
-  --corail-soft:#e9d3c8;
-  --sage:#4a6b4a;          /* alias accent secondaire */
-  --sage-pale:#e3ddc6;
-  --line:#b6a378;
-  --line-soft:#c9b990;
-  --font-stamp:'Permanent Marker', cursive;
-  --font-hand:'Kalam', cursive;
-  --font-display:'Permanent Marker', cursive;
-  --font-body:'Kalam', cursive;
+  /* Fonds */
+  --bg:#0f0f0f;
+  --bg-card:#1a1a1a;
+  --bg-card2:#222222;
+  --bg-input:#2a2a2a;
+
+  /* Texte */
+  --ink:#ffffff;
+  --ink-soft:#9a9a9a;
+  --ink-muted:#555555;
+
+  /* Accents */
+  --accent-blue:#3b82f6;
+  --accent-green:#22c55e;
+  --accent-red:#ef4444;
+  --accent-orange:#f97316;
+  --accent-purple:#a855f7;
+
+  /* Bordures */
+  --line:#2e2e2e;
+  --line-soft:#242424;
+
+  /* Aliases pour compatibilité avec les pages existantes */
+  --kraft:#0f0f0f;
+  --kraft-dark:#1a1a1a;
+  --card:#1a1a1a;
+  --paper-card:#1a1a1a;
+  --slate:#ffffff;
+  --slate-light:#9a9a9a;
+  --ink-soft:#9a9a9a;
+  --stamp-red:#ef4444;
+  --stamp-green:#22c55e;
+  --stamp-blue:#3b82f6;
+  --corail:#ef4444;
+  --corail-soft:#2a1a1a;
+  --sage:#22c55e;
+  --sage-pale:#0f2a0f;
+  --line-soft:#242424;
+
+  --font-stamp:'Inter', sans-serif;
+  --font-hand:'Inter', sans-serif;
+  --font-display:'Inter', sans-serif;
+  --font-body:'Inter', sans-serif;
   --font-mono:'JetBrains Mono', monospace;
 }
 
@@ -30,31 +52,30 @@
 
 body{
   margin:0;
-  font-family:var(--font-hand);
-  background:var(--kraft);
-  background-image:
-    repeating-linear-gradient(0deg, rgba(0,0,0,.015) 0, rgba(0,0,0,.015) 1px, transparent 1px, transparent 3px),
-    repeating-linear-gradient(90deg, rgba(0,0,0,.01) 0, rgba(0,0,0,.01) 1px, transparent 1px, transparent 3px);
+  font-family:var(--font-body);
+  background:var(--bg);
   color:var(--ink);
   min-height:100vh;
 }
 
-/* ---- Header commun (pages secondaires : éditeur, grille, schéma) ---- */
+/* ---- Header commun ---- */
 .app-header{
   position:sticky; top:0; z-index:30;
-  background:var(--kraft);
-  border-bottom:2px solid var(--ink);
-  padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;
-  display:flex; align-items:center; gap:8px;
+  background:rgba(15,15,15,.92);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--line);
+  padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;
+  display:flex; align-items:center; gap:10px;
 }
 .app-header .back{
-  background:none;border:none;color:var(--ink);font-size:24px;font-weight:700;
-  width:34px;height:34px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer; flex:none; font-family:var(--font-hand);
+  background:none; border:none; color:var(--ink); font-size:20px;
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex:none;
 }
 .app-header .htitle{
-  font-family:var(--font-stamp);
-  font-size:15px;
+  font-family:var(--font-body);
+  font-size:15px; font-weight:600;
   flex:1;
   overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
   color:var(--ink);
@@ -62,31 +83,35 @@ body{
 .app-header .save-status{
   font-family:var(--font-mono);
   font-size:10.5px;
-  color:var(--stamp-green);
+  color:var(--accent-green);
   flex:none;
 }
 .app-header .header-btn{
-  background:var(--card); border:1.5px solid var(--ink);
+  background:var(--bg-card2);
+  border:1px solid var(--line);
   color:var(--ink);
-  font-size:11px; font-family:var(--font-mono); letter-spacing:.03em;
+  font-size:11px; font-family:var(--font-mono); letter-spacing:.04em;
   text-transform:uppercase;
-  padding:6px 10px; cursor:pointer; flex:none;
-  border-radius:3px;
+  padding:7px 12px; cursor:pointer; flex:none;
+  border-radius:8px;
+  font-weight:500;
 }
-.app-header .header-btn:active{ box-shadow:none; transform:translateY(1px); }
+.app-header .header-btn:active{ opacity:.7; }
 
 /* ---- Boutons partagés ---- */
 .btn-primary, .btn-secondary{
-  border:2px solid var(--ink); padding:11px;
-  font-size:14px; font-weight:700; font-family:var(--font-hand); cursor:pointer;
-  border-radius:3px;
+  border:none; padding:13px;
+  font-size:14px; font-weight:600;
+  font-family:var(--font-body);
+  cursor:pointer;
+  border-radius:10px;
 }
-.btn-primary{background:var(--stamp-red); color:#fff; box-shadow:2px 2px 0 var(--ink);}
-.btn-primary:active{box-shadow:none; transform:translate(1px,1px);}
-.btn-secondary{background:var(--card); color:var(--ink); box-shadow:2px 2px 0 rgba(58,47,31,.3);}
-.btn-secondary:active{box-shadow:none; transform:translate(1px,1px);}
+.btn-primary{ background:var(--accent-blue); color:#fff; }
+.btn-primary:active{ opacity:.8; }
+.btn-secondary{ background:var(--bg-card2); color:var(--ink); border:1px solid var(--line); }
+.btn-secondary:active{ opacity:.8; }
 
-/* ---- Tampons (badges niveau scolaire) ---- */
-.stamp.cap{color:var(--stamp-blue);}
-.stamp.seconde{color:var(--stamp-green);}
-.stamp.bacpro{color:var(--stamp-red);}
+/* ---- Badges niveau scolaire ---- */
+.stamp.cap{ color:var(--accent-blue); }
+.stamp.seconde{ color:var(--accent-green); }
+.stamp.bacpro{ color:var(--accent-orange); }
