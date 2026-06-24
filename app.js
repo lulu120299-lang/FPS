@@ -54,11 +54,7 @@ function caKey(fps){
 
 function cardHtml(id, fps){
   const icon = APSA_ICONS[fps.apsa] || APSA_ICONS.default;
-  const niveaux = fps.niveaux || [];
   const meta = [fps.niveauScolaire, (fps.apsa || '').replace(/-/g,' ')].filter(Boolean).join(' · ');
-  const pegs = niveaux.length
-    ? niveaux.map((n,i) => `<div class="peg" style="background:${n.couleur || levelColor(i, niveaux.length)}"></div>`).join('')
-    : '';
 
   return `
     <div class="card" data-id="${id}" draggable="true">
@@ -70,7 +66,6 @@ function cardHtml(id, fps){
         <div class="card-title">${escapeHtml(fps.titre || 'Sans titre')}</div>
       </div>
       <div class="card-meta">${escapeHtml(meta || '—')}</div>
-      <div class="pegs">${pegs}</div>
     </div>`;
 }
 
