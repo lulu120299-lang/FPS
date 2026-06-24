@@ -388,6 +388,7 @@ function uploadImageForBlock(b){
 // =================== NIVEAUX (grille de classe) ===================
 function renderNiveaux(){
   const list = document.getElementById('niveauxList');
+  if (!list) return; // section supprimée du DOM — les données sont conservées en mémoire
   list.innerHTML = niveaux.map((n, i) => `
     <div class="niveau-item" data-i="${i}">
       <input type="color" class="niveau-color" value="${n.couleur}" oninput="updateNiveau(${i},'couleur',this.value)">
